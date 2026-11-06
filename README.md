@@ -2,12 +2,112 @@
 
 一个面向小米 HyperOS / MIUI 的 Magisk / KernelSU / SukiSU 通用模块，用于彻底移除并持续压制以下预置组件：
 
-| 显示名 | 包名 | 说明 |
-|---|---|---|
-| SystemHelper | `com.mobiletools.systemhelper` | 非小米常规命名的预装组件，内含百度定位 SDK（精确定位、基站/WiFi 指纹、设备标识） |
-| MIUIGuardProvider | `com.miui.guardprovider` | 小米安全组件，带 OneTrack 统计与云查上报，权限极大（录音、录屏、全部文件） |
-| MIUI 安全键盘 | `com.miui.securityinputmethod` | 系统密码安全输入法（本身无网络权限，可选移除） |
-| MiTrustService | `com.xiaomi.trustservice` | 小米互信/互联服务，带 INTERNET，会访问 `micloud.xiaomi.net` 设备与查找接口 |
+| 显示名 | 包名 |
+|---|---|
+| SystemHelper | `com.mobiletools.systemhelper` |
+| MIUIGuardProvider | `com.miui.guardprovider` |
+| MIUI 安全键盘 | `com.miui.securityinputmethod` |
+| MiTrustService | `com.xiaomi.trustservice` |
+
+---
+
+## 目标组件详解：它们做什么，模块为什么干掉它们
+
+### 1. SystemHelper（`com.mobiletools.systemhelper`）
+
+**它做什么**
+
+- 位于 `/system/priv-app/SystemHelper` 与 `/product/pangu/system/priv-app/SystemHelper`，是系统特权预装应用
+- 权限：精确定位、后台定位、`READ_PHONE_STATE`、`READ_PRIVILEGED_PHONE_STATE`、`PACKAGE_USAGE_STATS`、`QUERY_ALL_PACKAGES`、WiFi 状态、开机自启
+- 集成**百度定位 SDK 9.5.2**（`liblocSDK8b.so`、`libindoor.so`）
+- 代码中调用 `getImei` / `getDeviceId` / `getSubscriberId` / `getSimSerialNumber`、WiFi BSSID 与扫描结果、基站信息、已安装应用列表
+- 网络域名：`loc.map.baidu.com`、`api.map.baidu.com`、`ofloc.map.baidu.com`、`itsdata.map.baidu.com`
+
+**为什么干掉它**
+
+包名不符合小米常规命名，却拥有系统特权与定位/电话状态权限，持续把位置、基站/WiFi 指纹、设备标识上报到百度 LBS；普通用户无法卸载，也不在系统设置的应用列表里正常展示。
+
+**模块对它执行的操作**
+
+- 开机扫描前用空目录 bind-mount 覆盖上述两个 APK 目录，PackageManager 直接看不到包
+- 如果被应用商店/系统恢复装回 `/data/app`：10 秒内 `force-stop` → `pm suspend` → `pm disable-user` → `pm uninstall` → 删除 `/data/app`、`/data/data`、`/data/user*`
+- 对其 UID 插入 `iptables` / `ip6tables` 的 OUTPUT/INPUT `DROP`，TCP/UDP/QUIC/DNS/HTTP/HTTPS 全部阻断；包消失 60 秒后自动回收规则
+
+---
+
+### 2. MIUIGuardProvider（`com.miui.guardprovider`）
+
+**它做什么**
+
+- 位于 `/product/app/MIUIGuardProvider`，是小米安全组件（病毒查杀、网址检测）
+- 权限：`MANAGE_EXTERNAL_STORAGE`、`RECORD_AUDIO`、`CAPTURE_AUDIO_OUTPUT`、`CAPTURE_VIDEO_OUTPUT`、`MANAGE_MEDIA_PROJECTION`、`WRITE_SECURE_SETTINGS`、`DUMP`、`INTERACT_ACROSS_USERS`、`READ_PRIVILEGED_PHONE_STATE`、`QUERY_ALL_PACKAGES`
+- 调用 `getImei` / `getSubscriberId` / `getAndroidId`、已安装/运行应用列表、WiFi BSSID、`Settings.Secure`
+- 集成 **小米 OneTrack 统计**（`com.miui.analytics.onetrack`），域名 `tracking.miui.com`、`tracking.intl.miui.com`
+- 云查接口：`api.sec.miui.com`、`virus-engine.sec.miui.com`、`flash.sec.miui.com`
+- 还带有腾讯 TMSDK 与 AI 视觉 SDK
+
+**为什么干掉它**
+
+它会持续上报统计与云查数据，采集设备标识、已安装应用列表、WiFi 信息；同时权限远超普通杀毒引擎（能录音、录屏、读全部文件），且无法正常卸载/禁用（商店会更新、系统会恢复）。
+
+**模块对它执行的操作**
+
+- 覆盖 `/product/app/MIUIGuardProvider`
+- 商店更新版本（`/data/app`）出现时 10 秒内卸载并断网
+- 清理其 `/data/data`、`/data/user*`、`/data/app` 残留
+- 对其 UID 做全协议 DROP，规则 60 秒后自动回收
+
+---
+
+### 3. MIUI 安全键盘（`com.miui.securityinputmethod`）
+
+**它做什么**
+
+- 位于 `/product/app/MIUISecurityInputMethod`，是密码框自动切换的“安全键盘”
+- 权限只有：`BIND_INPUT_METHOD`、`MANAGE_APP_OPS_RESTRICTIONS`、`VIBRATE`
+- **没有 `INTERNET` 权限**，DEX 中也没有任何上报域名或统计 SDK
+
+**为什么干掉它**
+
+它是本地输入法，理论上无法上传数据；但作为输入法，它能看到你在密码框输入的全部内容。对于不使用小米密码保险箱/安全输入的用户，它只会造成密码框 UI 被劫持、输入法切换异常，因此一并移除。此项目属于可选清理项，移除后密码框回落到你设置的普通输入法。
+
+**模块对它执行的操作**
+
+- 覆盖 `/product/app/MIUISecurityInputMethod`
+- 若被装回则按同一套看门狗流程卸载，并对其 UID 断网（虽然它本来也没有网络权限）
+
+---
+
+### 4. MiTrustService（`com.xiaomi.trustservice`）
+
+**它做什么**
+
+- 位于 `/product/app/MiTrustService`，是小米互信/互联服务（多设备协同、查找设备等）
+- 权限：`INTERNET`、`BLUETOOTH`、`MANAGE_BIOMETRIC`、`USE_BIOMETRIC`、`USE_FINGERPRINT`、`SYSTEM_ALERT_WINDOW`、`WAKE_LOCK`
+- 调用 `getDeviceId`、`getRunningAppProcesses`、`Settings.Secure`
+- 网络域名：`deviceapi.micloud.xiaomi.net`、`find.api.micloud.xiaomi.net`
+- 与 `com.xiaomi.mi_connect_service`、`com.xiaomi.continuity`、`xms` 等服务联动
+
+**为什么干掉它**
+
+它持有 `INTERNET` 与设备标识读取能力，会向小米云端设备接口上报设备信息；普通用户几乎用不到互联/互信功能，却要承担后台常驻与数据上报的代价。
+
+**模块对它执行的操作**
+
+- 覆盖 `/product/app/MiTrustService`
+- 该类包为 **platform 签名 + `android.uid.system` 共享 UID**，普通方式无法重新安装；若通过 OTA 写入系统分区，开机时仍会被 bind-mount 抹除
+- 若以其他方式出现，同样执行卸载、清数据、UID 断网
+
+---
+
+## 通用处置逻辑
+
+无论哪个组件，模块都会执行同一套动作：
+
+1. **开机扫描前隐藏**：bind-mount 空目录，系统看不到 APK
+2. **装回即清**：10 秒看门狗检测 `/data/app`，命中后强杀、挂起、禁用、卸载、清数据
+3. **UID 断网**：`iptables` / `ip6tables` 对目标 UID 的 OUTPUT/INPUT 全协议 DROP
+4. **自动收尾**：包消失 60 秒后删规则；日志超过 64 KB 自动截断
 
 ---
 
