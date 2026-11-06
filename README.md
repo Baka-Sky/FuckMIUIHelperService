@@ -7,6 +7,7 @@
 | SystemHelper | `com.mobiletools.systemhelper` | 非小米常规命名的预装组件，内含百度定位 SDK（精确定位、基站/WiFi 指纹、设备标识） |
 | MIUIGuardProvider | `com.miui.guardprovider` | 小米安全组件，带 OneTrack 统计与云查上报，权限极大（录音、录屏、全部文件） |
 | MIUI 安全键盘 | `com.miui.securityinputmethod` | 系统密码安全输入法（本身无网络权限，可选移除） |
+| MiTrustService | `com.xiaomi.trustservice` | 小米互信/互联服务，带 INTERNET，会访问 `micloud.xiaomi.net` 设备与查找接口 |
 
 ---
 
@@ -23,6 +24,7 @@
 /product/app/MIUIGuardProvider
 /product/pangu/system/priv-app/SystemHelper
 /product/app/MIUISecurityInputMethod
+/product/app/MiTrustService
 ```
 
 同时动态扫描 `/system`、`/system_ext`、`/product`、`/vendor`、`/odm` 下所有匹配目录，一并覆盖。系统启动后**根本看不到这些包**。
@@ -88,6 +90,7 @@ TCP / UDP / QUIC / DNS / HTTP / HTTPS 全部阻断，进程连域名都解析不
 
 - 移除 `MIUIGuardProvider` 后，小米安全中心的部分云查/支付保护功能不可用
 - 移除 `MIUISecurityInputMethod` 后，密码框将回落到普通输入法，个别银行类 App 可能提示未使用安全键盘
+- 移除 `MiTrustService` 后，小米互联/多设备协同、查找设备等依赖互信服务的功能可能不可用
 - 系统 OTA 升级后模块仍然生效，但若 OTA 改动了分区路径，可能需要更新目录规则
 
 ---
