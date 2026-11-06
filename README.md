@@ -91,6 +91,19 @@
 
 ---
 
+## 为什么小米商城 / 互联仍能正常打开
+
+本模块是**精确点名清除**，不做全局封杀，因此不会波及其他小米应用：
+
+- **作用域极小**：只处理 SystemHelper、MIUIGuardProvider、MiTrustService 三个包，隐藏它们自己的 APK 目录，并对它们自己的 UID 断网；不修改 `hosts`、不禁用 `com.miui.securitycenter`、不动系统分区
+- **不影响依赖方**：`com.xiaomi.market`（小米商城）、`com.miui.mishare.connectivity`（互传）、`com.xiaomi.mi_connect_service`（互联服务）、`com.xiaomi.continuity.sdkapp` 均原样保留
+- **"隐藏"而不是"禁用"**：包被 bind-mount 抹除后，应用查询时得到的是“未安装”，会走降级分支；而 `pm disable-user` 只禁用不删除，调用时更容易抛 `SecurityException` / `ComponentNotFound` 导致崩溃
+- **无全局域名封锁**：不会屏蔽 `tracking.miui.com`、`api.sec.miui.com`、`micloud.xiaomi.net`，商城的登录、互联的握手链路保持可用
+
+代价是部分能力会降级（GuardProvider 云查、MiTrust 互信校验），但不会让应用打不开。其他模块之所以导致商城/互联无法启动，通常是因为它们同时禁用/删除了安全中心、全局屏蔽了小米域名，或直接改写系统分区。
+
+---
+
 ## 工作原理
 
 模块采用四层机制，不依赖“冻结/禁用”（MIUI 会通过系统应用恢复、应用商店更新、OTA 重新启用）：
