@@ -1,5 +1,5 @@
 id=fuckmiuihelperservice
 name=FuckMIUIHelperService!
-version=1.2
-versionCode=3
-description=通过超雷霆手段禁用MIUIGuardProvider SystemHelper MIUISecurityInputMethod MiTrustService 的自动安装权限 启动权限 上传下载数据权限
+version=1.3
+versionCode=4
+description=通过超雷霆手段禁用MIUIGuardProvider SystemHelper MiTrustService 的自动安装权限 启动权限 上传下载数据权限

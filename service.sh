@@ -4,7 +4,7 @@
 MODDIR=${0%/*}
 EMPTY="$MODDIR/empty"
 LOG=/data/local/tmp/FuckMIUIHelperService.log
-PKGS="com.mobiletools.systemhelper com.miui.guardprovider com.miui.securityinputmethod com.xiaomi.trustservice"
+PKGS="com.mobiletools.systemhelper com.miui.guardprovider com.xiaomi.trustservice"
 RULES=/data/local/tmp/FuckMIUIHelperService.uids
 mkdir -p "$EMPTY"
 
@@ -117,7 +117,7 @@ rehide() {
         for d in "$base"/*; do
             [ -d "$d" ] || continue
             case "$d" in
-                *SystemHelper*|*MIUIGuardProvider*|*GuardProvider*|*SecurityInputMethod*|*MiTrust*)
+                *SystemHelper*|*MIUIGuardProvider*|*GuardProvider*|*MiTrust*)
                     mountpoint -q "$d" 2>/dev/null || mount --bind "$EMPTY" "$d" 2>/dev/null
                     ;;
             esac

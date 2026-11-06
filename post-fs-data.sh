@@ -19,7 +19,6 @@ HIDE_DIRS="/system/priv-app/SystemHelper
 /system/app/SystemHelper
 /system_ext/priv-app/SystemHelper
 /product/app/MIUIGuardProvider
-/product/app/MIUISecurityInputMethod
 /product/app/MiTrustService
 /product/priv-app/MIUIGuardProvider
 /vendor/app/MIUIGuardProvider
@@ -35,7 +34,7 @@ for base in /system/priv-app /system/app /system_ext/priv-app /system_ext/app \
     for d in "$base"/*; do
         [ -d "$d" ] || continue
         case "$d" in
-            *SystemHelper*|*MIUIGuardProvider*|*GuardProvider*|*SecurityInputMethod*|*MiTrust*) HIDE_DIRS="$HIDE_DIRS
+            *SystemHelper*|*MIUIGuardProvider*|*GuardProvider*|*MiTrust*) HIDE_DIRS="$HIDE_DIRS
 $d" ;;
         esac
     done

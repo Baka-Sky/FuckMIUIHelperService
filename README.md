@@ -6,7 +6,6 @@
 |---|---|
 | SystemHelper | `com.mobiletools.systemhelper` |
 | MIUIGuardProvider | `com.miui.guardprovider` |
-| MIUI 安全键盘 | `com.miui.securityinputmethod` |
 | MiTrustService | `com.xiaomi.trustservice` |
 
 ---
@@ -59,28 +58,7 @@
 
 ---
 
-### 3. MIUI 安全键盘（`com.miui.securityinputmethod`）
-
-**它做什么**
-
-- 位于 `/product/app/MIUISecurityInputMethod`，是密码框自动切换的“安全键盘”
-- 权限只有：`BIND_INPUT_METHOD`、`MANAGE_APP_OPS_RESTRICTIONS`、`VIBRATE`
-- **没有 `INTERNET` 权限**，DEX 中也没有任何上报域名或统计 SDK
-
-**为什么干掉它**
-
-它是本地输入法，理论上无法上传数据；但作为输入法，它能看到你在密码框输入的全部内容。对于不使用小米密码保险箱/安全输入的用户，它只会造成密码框 UI 被劫持、输入法切换异常，因此模块默认一并移除。
-
-说明：这里的“可选”指的是**安全键盘这一项**，不是整个模块。它是四项里唯一移除后不影响系统关键功能的组件；如果你要保留它，把 `com.miui.securityinputmethod` 从脚本的 `PKGS` 与隐藏列表里删掉即可。移除后密码框会回落到你设置的普通输入法。
-
-**模块对它执行的操作**
-
-- 覆盖 `/product/app/MIUISecurityInputMethod`
-- 若被装回则按同一套看门狗流程卸载，并对其 UID 断网（虽然它本来也没有网络权限）
-
----
-
-### 4. MiTrustService（`com.xiaomi.trustservice`）
+### 3. MiTrustService（`com.xiaomi.trustservice`）
 
 **它做什么**
 
@@ -125,7 +103,6 @@
 /system/priv-app/SystemHelper
 /product/app/MIUIGuardProvider
 /product/pangu/system/priv-app/SystemHelper
-/product/app/MIUISecurityInputMethod
 /product/app/MiTrustService
 ```
 
@@ -191,7 +168,6 @@ TCP / UDP / QUIC / DNS / HTTP / HTTPS 全部阻断，进程连域名都解析不
 ## 已知影响
 
 - 移除 `MIUIGuardProvider` 后，小米安全中心的部分云查/支付保护功能不可用
-- 移除 `MIUISecurityInputMethod` 后，密码框将回落到普通输入法，个别银行类 App 可能提示未使用安全键盘
 - 移除 `MiTrustService` 后，小米互联/多设备协同、查找设备等依赖互信服务的功能可能不可用
 - 系统 OTA 升级后模块仍然生效，但若 OTA 改动了分区路径，可能需要更新目录规则
 
